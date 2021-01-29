@@ -1,3 +1,5 @@
+from datetime import datetime
+import time
 import pygame
 import random
 #-- Global constants
@@ -13,7 +15,8 @@ pygame.init()
 
 #variables needed for classes
 prev = None
-same = False
+highest = 0
+up = False
 
 class Player(pygame.sprite.Sprite):
 	def __init__(self):
@@ -27,20 +30,23 @@ class Player(pygame.sprite.Sprite):
 		self.speed = 48
 
 	def update(self, change, platforms):
+		global up
 		self.rect.y -= self.speed/3
 		if self.speed > 0:
 			self.speed -= 3
 		if self.speed == 0:
 			self.speed = -33
 		if self.speed < 0:
+			up = False
 			self.speed += 3
-		if self.speed < 0 and pygame.sprite.spritecollideany(self, platforms):
-			self.speed = 48
 		self.rect.x += change
 		if self.rect.x == -40:
 			self.rect.x = 540
 		if self.rect.x == 550:
 			self.rect.x = -30
+
+	def up(self):
+		self.speed = 48
 
 
 class Platform(pygame.sprite.Sprite):
@@ -48,14 +54,21 @@ class Platform(pygame.sprite.Sprite):
 		super().__init__()
 		self.image = pygame.Surface([60, 10])
 		self.image.fill(BLUE)
+		self.time = time.time()
 		#set the position of the sprite
 		self.rect = self.image.get_rect()
 		self.rect.x = x
 		self.rect.y = y
 
-	def move(self, player):
-		if player.speed > 0:
+	def update(self, player):
+		if player.rect.y > 400:
 			self.rect.y += player.speed/3
+		elif player.rect.y < 300 and player.rect.y > 200:
+			self.rect.y += player.speed/2.5
+		elif player.rect.y < 200 and player.rect.y > 100:
+			self.rect.y += player.speed
+		elif player.rect.y <= 100:
+			self.rect.y += player.speed*2
 		if self.rect.y >= 800:
 			self.kill()
 
@@ -81,57 +94,56 @@ group.add(player)
 
 ###-- Game Loop
 while not done:
-    #-- User inputs here
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            exit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                change = -10
-            elif event.key == pygame.K_RIGHT:
-                change = 10
-             #endif
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_UP or event.key == pygame.K_DOWN:
-                change = 0
-            #endif
-        #endif
-    # Game logic goes after this comment
-    max_h = 800
-    while len(platforms) < 7:
-    	if len(platforms) > 0:
-    		for x in platforms:
-    			if x.rect.y < max_h:
-    				max_h = x.rect.y
-    		platforms.add(Platform(random.randint(0, 490), max_h-110))
-    	else:
-    		platforms.add(Platform(240, 760))
+	#-- User inputs here
+	for event in pygame.event.get():
+		if event.type == pygame.QUIT:
+			exit()
+		elif event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_LEFT:
+				change = -10
+			elif event.key == pygame.K_RIGHT:
+				change = 10
+			 #endif
+		elif event.type == pygame.KEYUP:
+			if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+				change = 0
+			#endif
+		#endif
+	# Game logic goes after this comment
+	max_h = 800
+	while len(platforms) < 7:
+		if len(platforms) > 0:
+			for x in platforms:
+				if x.rect.y < max_h:
+					max_h = x.rect.y
+			platforms.add(Platform(random.randint(0, 490), max_h-110))
+			time.sleep(0.000001)
+		else:
+			platforms.add(Platform(240, 760))
+			time.sleep(0.000001)
 
-    # Screen background is BLACK
-    screen.fill(BLACK)
+	# Screen background is BLACK
+	screen.fill(BLACK)
 
-    platforms.draw(screen)
-    group.draw(screen)
-    player.update(change, platforms)
-    if prev != None:
-    	if pygame.sprite.collide_rect(player, prev):
-    		same = True
-    		print(same)
+	platforms.draw(screen)
+	group.draw(screen)
+	player.update(change, platforms)
+	if up:
+		platforms.update(player)
+	for x in platforms:
+		if player.speed < 0 and pygame.sprite.collide_rect(player, x):
+			if prev != None:
+				if highest-x.time < 0:
+					up = True
+			prev = x.time
+			if prev > highest:
+				highest = prev
+			player.up()
 
-    for x in platforms:
-    	if pygame.sprite.collide_rect(player, x):
-    		prev = x
-
-    if same == False:
-    	for x in platforms:
-    		x.move(player)
-
-    #--flip display to reveal new position of objects
-    pygame.display.flip()
-    clock.tick(60)
-
-    same = False
+	#--flip display to reveal new position of objects
+	pygame.display.flip()
+	clock.tick(60)
 
 ###--End of game loop
 pygame.quit()
-    
+	
