@@ -2,6 +2,7 @@ from datetime import datetime
 import time
 import pygame
 import random
+import math
 #-- Global constants
 
 #-- Colors
@@ -65,6 +66,36 @@ class Player(pygame.sprite.Sprite):
 	def scoreup(self, num):
 		if num*50 > self.score:
 			self.score = num*50
+
+
+class Shot(pygame.sprite.Sprite):
+	def __init__(self, player):
+		super().__init__()
+		self.image = pygame.Surface([10,10])
+		self.image.fill(RED)
+		self.rect = self.image.get_rect()
+		self.rect.y = player.rect.y
+		self.rect.x = player.rect.x + 15
+		self.speed = 10
+
+	def update(self, enemy_list):
+		if enemy_list:
+			for x in enemy_list:
+				enemy = x
+			dx, dy = enemy.rect.x - self.rect.x, enemy.rect.y - self.rect.y
+			dist = math.hypot(dx, dy)
+			if dist != 0:
+				dx, dy = dx / dist, dy / dist  # Normalize.
+				# Move along this normalized vector towards the player at current speed.
+				self.rect.x += dx * self.speed
+				self.rect.y += dy * self.speed
+			if pygame.sprite.collide_rect(self, enemy):
+				enemy.kill()
+				self.kill()
+		else:
+			self.rect.y -= self.speed
+			if self.rect.y <= -5:
+				self.kill()
 
 
 class Platform(pygame.sprite.Sprite):
@@ -145,6 +176,7 @@ player = Player()
 group = pygame.sprite.Group()
 platforms = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
+shots = pygame.sprite.Group()
 group.add(player)
 
 ###-- Game Loop
@@ -158,6 +190,8 @@ while not done:
 				change = -10
 			elif event.key == pygame.K_RIGHT:
 				change = 10
+			if event.key == pygame.K_SPACE:
+				shots.add(Shot(player))
 			 #endif
 		elif event.type == pygame.KEYUP:
 			if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_UP or event.key == pygame.K_DOWN:
@@ -217,8 +251,10 @@ while not done:
 
 	platforms.draw(screen)
 	group.draw(screen)
+	shots.draw(screen)
 	enemies.draw(screen)
 	player.update(change, platforms)
+	shots.update(enemies)
 	if player.rect.y < 500:
 		up = True
 	if up:
