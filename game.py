@@ -78,21 +78,29 @@ class Shot(pygame.sprite.Sprite):
 		self.rect.x = player.rect.x + 15
 		self.speed = 10
 
-	def update(self, enemy_list):
-		if enemy_list:
+	def update(self, enemy_list, player):
+		try:
+			y = 0
 			for x in enemy_list:
-				enemy = x
-			dx, dy = enemy.rect.x - self.rect.x, enemy.rect.y - self.rect.y
-			dist = math.hypot(dx, dy)
-			if dist != 0:
-				dx, dy = dx / dist, dy / dist  # Normalize.
-				# Move along this normalized vector towards the player at current speed.
-				self.rect.x += dx * self.speed
-				self.rect.y += dy * self.speed
-			if pygame.sprite.collide_rect(self, enemy):
-				enemy.kill()
-				self.kill()
-		else:
+				while y < 1:
+					enemy = x
+					y += 1
+			if player.rect.y >= enemy.rect.y:
+				dx, dy = enemy.rect.x - self.rect.x, enemy.rect.y - self.rect.y
+				dist = math.hypot(dx, dy)
+				if dist != 0:
+					dx, dy = dx / dist, dy / dist  # Normalize.
+					# Move along this normalized vector towards the player at current speed.
+					self.rect.x += dx * self.speed
+					self.rect.y += dy * self.speed
+				if pygame.sprite.collide_rect(self, enemy):
+					enemy.kill()
+					self.kill()
+			else:
+				self.rect.y -= self.speed
+				if self.rect.y <= -5:
+					self.kill()
+		except UnboundLocalError:
 			self.rect.y -= self.speed
 			if self.rect.y <= -5:
 				self.kill()
@@ -254,7 +262,7 @@ while not done:
 	shots.draw(screen)
 	enemies.draw(screen)
 	player.update(change, platforms)
-	shots.update(enemies)
+	shots.update(enemies, player)
 	if player.rect.y < 500:
 		up = True
 	if up:
