@@ -69,7 +69,7 @@ class Player(pygame.sprite.Sprite):
 
 
 class Shot(pygame.sprite.Sprite):
-	def __init__(self, player):
+	def __init__(self, player, enemies):
 		super().__init__()
 		self.image = pygame.Surface([10,10])
 		self.image.fill(RED)
@@ -77,30 +77,33 @@ class Shot(pygame.sprite.Sprite):
 		self.rect.y = player.rect.y
 		self.rect.x = player.rect.x + 15
 		self.speed = 10
-
-	def update(self, enemy_list, player):
 		try:
 			y = 0
-			for x in enemy_list:
+			for x in enemies:
 				while y < 1:
 					enemy = x
 					y += 1
 			if player.rect.y >= enemy.rect.y:
-				dx, dy = enemy.rect.x - self.rect.x, enemy.rect.y - self.rect.y
-				dist = math.hypot(dx, dy)
-				if dist != 0:
-					dx, dy = dx / dist, dy / dist  # Normalize.
-					# Move along this normalized vector towards the player at current speed.
-					self.rect.x += dx * self.speed
-					self.rect.y += dy * self.speed
-				if pygame.sprite.collide_rect(self, enemy):
-					enemy.kill()
-					self.kill()
+				self.enemy = enemy
+				self.type = 'directed'
 			else:
-				self.rect.y -= self.speed
-				if self.rect.y <= -5:
-					self.kill()
+				self.type = 'straight'
 		except UnboundLocalError:
+			self.type = 'straight'
+
+	def update(self):
+		if self.type == 'directed':
+			dx, dy = self.enemy.rect.x - self.rect.x, self.enemy.rect.y - self.rect.y
+			dist = math.hypot(dx, dy)
+			if dist != 0:
+				dx, dy = dx / dist, dy / dist  # Normalize.
+				# Move along this normalized vector towards the player at current speed.
+				self.rect.x += dx * self.speed
+				self.rect.y += dy * self.speed
+			if pygame.sprite.collide_rect(self, self.enemy):
+				self.enemy.kill()
+				self.kill()
+		else:
 			self.rect.y -= self.speed
 			if self.rect.y <= -5:
 				self.kill()
@@ -199,7 +202,7 @@ while not done:
 			elif event.key == pygame.K_RIGHT:
 				change = 10
 			if event.key == pygame.K_SPACE:
-				shots.add(Shot(player))
+				shots.add(Shot(player, enemies))
 			 #endif
 		elif event.type == pygame.KEYUP:
 			if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT or event.key == pygame.K_UP or event.key == pygame.K_DOWN:
@@ -262,7 +265,7 @@ while not done:
 	shots.draw(screen)
 	enemies.draw(screen)
 	player.update(change, platforms)
-	shots.update(enemies, player)
+	shots.update()
 	if player.rect.y < 500:
 		up = True
 	if up:
