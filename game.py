@@ -211,7 +211,7 @@ while not done:
 		#endif
 	# Game logic goes after this comment
 	max_h = 800
-	while len(platforms) < 14:
+	while len(platforms) < 24:
 		if len(platforms) > 0:
 			for x in platforms:
 				if x.rect.y < max_h:
@@ -219,10 +219,18 @@ while not done:
 			kind = random.choice(kinds)
 			x = random.randint(0, 490)
 			platforms.add(Platform(x, max_h-115, platform_number, kind))
-			if x < 250:
-				platforms.add(Platform(x+200, max_h-175, platform_number, random.choice(['regular', 'ot'])))
-			if x >= 250:
-				platforms.add(Platform(x-200, max_h-175, platform_number, random.choice(['regular', 'ot'])))
+			if player.score < 10000:
+				if x < 250:
+					platforms.add(Platform(x+200, max_h+175, platform_number, random.choice(['regular', 'ot'])))
+				elif x >= 250:
+					platforms.add(Platform(x-200, max_h+175, platform_number, random.choice(['regular', 'ot'])))
+			elif player.score > 10000 and player.score < 20000:
+				if x < 250:
+					platforms.add(Platform(x+200, max_h-175, platform_number, random.choice(['regular', 'ot'])))
+				elif x >= 250:
+					platforms.add(Platform(x-200, max_h-175, platform_number, random.choice(['regular', 'ot'])))
+			else:
+				pass
 			platform_enemy = random.choice(['platform', 'platform', 'platform', 'platfrom', 'platform', 'platform', 'platform', 'enemy', 'platform', 'platform'])
 			enemy = random.choice(['no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'yes', 'no'])
 			if kind == 'ot':
