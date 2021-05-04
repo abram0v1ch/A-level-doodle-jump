@@ -12,6 +12,7 @@ BLUE = (50,50,255)
 YELLOW = (255,255,0)
 GREEN = (75, 139, 59)
 RED = (250, 10, 10)
+PURPLE = (255, 0, 255)
 
 #-- Initialise pygame and clock
 pygame.init()
@@ -23,7 +24,7 @@ up = False
 pmh = 575
 hd = None
 kinds = ['regular', 'movable', 'ot']
-mods = ['spring', 'helihat', 'rocket', 'none']
+mods = ['none', 'spring', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'helihat', 'none', 'none', 'spring', 'none', 'none', 'none', 'none', 'spring', 'none', 'none', 'none', 'none', 'none', 'none', 'rocket', 'none']
 
 platform_number = 0
 
@@ -110,7 +111,7 @@ class Shot(pygame.sprite.Sprite):
 
 
 class Platform(pygame.sprite.Sprite):
-	def __init__(self, x, y, number, kind):
+	def __init__(self, x, y, number, kind, mod):
 		super().__init__()
 		self.image = pygame.Surface([60, 10])
 		self.kind = kind
@@ -127,12 +128,20 @@ class Platform(pygame.sprite.Sprite):
 		self.rect.x = x
 		self.rect.y = y
 		self.number = number
+		if mod != 'none':
+			self.powerup = Mod(mod, self)
+		self.mod = mod
 
 	def update(self, player):
 		global hd
 
+		if self.mod != 'none':
+			self.powerup.update()
+
 		self.rect.y += abs(hd)/(10)
 		if self.rect.y >= 800:
+			if self.mod != 'none':
+				self.powerup.kill()
 			self.kill()
 
 	def move(self):
@@ -141,6 +150,8 @@ class Platform(pygame.sprite.Sprite):
 		elif self.rect.x <= 0:
 			self.speed = 3
 		self.rect.x += self.speed
+		if self.mod != 'none':
+			self.powerup.move(self.speed)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -169,6 +180,37 @@ class Enemy(pygame.sprite.Sprite):
 		if self.rect.x - self.inx == -50:
 			self.change *= -1
 
+
+class Mod(pygame.sprite.Sprite):
+	def __init__(self, kind, platform):
+		super().__init__()
+		if kind == 'spring':
+			self.image = pygame.Surface([15, 15])
+			self.rect = self.image.get_rect()
+			self.rect.y = platform.rect.y - 15
+			self.rect.x = platform.rect.x + 22.5
+		elif kind == 'rocket':
+			self.image = pygame.Surface([15, 25])
+			self.rect = self.image.get_rect()
+			self.rect.y = platform.rect.y - 25
+			self.rect.x = platform.rect.x + 22.5
+		else:
+			self.image = pygame.Surface([25, 15])
+			self.rect = self.image.get_rect()
+			self.rect.y = platform.rect.y - 15
+			self.rect.x = platform.rect.x + 17.5
+		self.image.fill(PURPLE)
+		self.kind = kind
+		powerups.add(self)
+
+	def update(self):
+		global hd
+
+		self.rect.y += abs(hd)/(10)
+
+	def move(self, hm):
+		self.rect.x += hm
+
 #-- Blank screen
 size = (550,800)
 screen = pygame.display.set_mode(size)
@@ -188,6 +230,7 @@ group = pygame.sprite.Group()
 platforms = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 shots = pygame.sprite.Group()
+powerups = pygame.sprite.Group()
 group.add(player)
 
 ###-- Game Loop
@@ -218,17 +261,26 @@ while not done:
 					max_h = x.rect.y
 			kind = random.choice(kinds)
 			x = random.randint(0, 490)
-			platforms.add(Platform(x, max_h-115, platform_number, kind))
+			if kind == 'ot':
+				mod = 'none'
+			else:
+				mod = random.choice(mods)
+			platforms.add(Platform(x, max_h-115, platform_number, kind, mod))
+			kd = random.choice(['regular', 'ot'])
+			if kd == 'ot':
+				md = 'none'
+			else:
+				md = random.choice(mods)
 			if player.score < 10000:
 				if x < 250:
-					platforms.add(Platform(x+200, max_h+175, platform_number, random.choice(['regular', 'ot'])))
+					platforms.add(Platform(x+200, max_h+175, platform_number, kd, md))
 				elif x >= 250:
-					platforms.add(Platform(x-200, max_h+175, platform_number, random.choice(['regular', 'ot'])))
+					platforms.add(Platform(x-200, max_h+175, platform_number, kd, md))
 			elif player.score > 10000 and player.score < 20000:
 				if x < 250:
-					platforms.add(Platform(x+200, max_h-175, platform_number, random.choice(['regular', 'ot'])))
+					platforms.add(Platform(x+200, max_h-175, platform_number, kd, md))
 				elif x >= 250:
-					platforms.add(Platform(x-200, max_h-175, platform_number, random.choice(['regular', 'ot'])))
+					platforms.add(Platform(x-200, max_h-175, platform_number, kd, md))
 			else:
 				pass
 			platform_enemy = random.choice(['platform', 'platform', 'platform', 'platfrom', 'platform', 'platform', 'platform', 'enemy', 'platform', 'platform'])
@@ -236,12 +288,12 @@ while not done:
 			if kind == 'ot':
 				if x < 250:
 					if platform_enemy == 'platform':
-						platforms.add(Platform(x+200, max_h-115, platform_number, 'regular'))
+						platforms.add(Platform(x+200, max_h-115, platform_number, 'regular', random.choice(mods)))
 					elif len(enemies) == 0:
 						enemies.add(Enemy(x+250, max_h-110))
 				if x >= 250:
 					if platform_enemy == 'platform':
-						platforms.add(Platform(x-200, max_h-110, platform_number, 'regular'))
+						platforms.add(Platform(x-200, max_h-110, platform_number, 'regular', random.choice(mods)))
 					else:
 						enemies.add(Enemy(x-250, max_h-125))
 			if kind == 'regular':
@@ -254,7 +306,7 @@ while not done:
 			platform_number += 1
 			time.sleep(0.000001)
 		else:
-			platforms.add(Platform(240, 760, platform_number, 'regular'))
+			platforms.add(Platform(240, 760, platform_number, 'regular', 'none'))
 			platform_number += 1
 			time.sleep(0.000001)
 
@@ -272,6 +324,7 @@ while not done:
 	group.draw(screen)
 	shots.draw(screen)
 	enemies.draw(screen)
+	powerups.draw(screen)
 	player.update(change, platforms)
 	shots.update()
 	if player.rect.y < 500:
