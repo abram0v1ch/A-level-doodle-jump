@@ -39,6 +39,8 @@ class Player(pygame.sprite.Sprite):
 		self.rect.y = 720
 		self.score = 0
 		self.speed = 40
+		self.mod = None
+		self.time = None
 
 	def update(self, change, platforms):
 		global up
@@ -46,15 +48,34 @@ class Player(pygame.sprite.Sprite):
 		if self.rect.y < 450:
 			self.speed = 0
 			self.rect.y += 20
-		self.rect.y -= self.speed/3
-		if self.speed > 0:
-			self.speed -= 2
-		if self.speed == 0:
-			up = False
-			hd = self.rect.y - pmh
-			self.speed = -40
-		if self.speed < 0:
-			self.speed += 3
+		if self.mod == 'spring':
+			if time.time() - self.time <= 2:
+				self.rect.y -= 20
+			else:
+				self.time = 0
+				self.mod = None
+		elif self.mod == 'helihat':
+			if time.time() - self.time <= 4:
+				self.rect.y -= 20
+			else:
+				self.time = 0
+				self.mod = None
+		elif self.mod == 'rocket':
+			if time.time() - self.time <= 6:
+				self.rect.y -= 20
+			else:
+				self.time = 0
+				self.mod = None
+		else:
+			self.rect.y -= self.speed/3
+			if self.speed > 0:
+				self.speed -= 2
+			if self.speed == 0:
+				up = False
+				hd = self.rect.y - pmh
+				self.speed = -40
+			if self.speed < 0:
+				self.speed += 3
 		self.rect.x += change
 		if self.rect.x == -40:
 			self.rect.x = 540
@@ -63,6 +84,16 @@ class Player(pygame.sprite.Sprite):
 
 	def up(self):
 		self.speed = 40
+
+	def powerup(self, mod):
+		if mod == 'spring':
+			self.speed = 80
+		elif mod == 'helihat':
+			self.speed = 100
+		else:
+			self.speed = 120
+		self.mod = mod
+		self.time = time.time()
 
 	def scoreup(self, num):
 		if num*50 > self.score:
@@ -134,11 +165,18 @@ class Platform(pygame.sprite.Sprite):
 
 	def update(self, player):
 		global hd
-
+		if player.mod == 'spring':
+			hm = abs(hd)/(10-2)
+		elif player.mod == 'helihat':
+			hm = abs(hd)/(10-4)
+		elif player.mod == 'rocket':
+			hm = abs(hd)/(10-60)
+		else:
+			hm = abs(hd)/(10)
 		if self.mod != 'none':
-			self.powerup.update()
+			self.powerup.update(hm)
 
-		self.rect.y += abs(hd)/(10)
+		self.rect.y += hm
 		if self.rect.y >= 800:
 			if self.mod != 'none':
 				self.powerup.kill()
@@ -203,10 +241,8 @@ class Mod(pygame.sprite.Sprite):
 		self.kind = kind
 		powerups.add(self)
 
-	def update(self):
-		global hd
-
-		self.rect.y += abs(hd)/(10)
+	def update(self, hm):
+		self.rect.y += hm
 
 	def move(self, hm):
 		self.rect.x += hm
@@ -346,7 +382,10 @@ while not done:
 				player.scoreup(x.number)
 			if x.kind == 'ot':
 				x.kill()
-			player.up()
+			if x.mod != 'none' and pygame.sprite.collide_rect(player, x.powerup):
+				player.powerup(x.mod)
+			else:
+				player.up()
 
 	print(player.score)
 
