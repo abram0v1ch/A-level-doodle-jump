@@ -49,19 +49,19 @@ class Player(pygame.sprite.Sprite):
 			self.speed = 0
 			self.rect.y += 20
 		if self.mod == 'spring':
-			if time.time() - self.time <= 2:
+			if time.time() - self.time <= 0.75:
 				self.rect.y -= 20
 			else:
 				self.time = 0
 				self.mod = None
 		elif self.mod == 'helihat':
-			if time.time() - self.time <= 4:
+			if time.time() - self.time <= 2:
 				self.rect.y -= 20
 			else:
 				self.time = 0
 				self.mod = None
 		elif self.mod == 'rocket':
-			if time.time() - self.time <= 6:
+			if time.time() - self.time <= 4:
 				self.rect.y -= 20
 			else:
 				self.time = 0
@@ -166,11 +166,11 @@ class Platform(pygame.sprite.Sprite):
 	def update(self, player):
 		global hd
 		if player.mod == 'spring':
-			hm = abs(hd)/(10-2)
+			hm = (545-450)/(10-2)
 		elif player.mod == 'helihat':
-			hm = abs(hd)/(10-4)
+			hm = (545-450)/(10-4)
 		elif player.mod == 'rocket':
-			hm = abs(hd)/(10-60)
+			hm = (545-450)/(10-6)
 		else:
 			hm = abs(hd)/(10)
 		if self.mod != 'none':
@@ -207,7 +207,15 @@ class Enemy(pygame.sprite.Sprite):
 	def update(self, player):
 		global hd
 
-		self.rect.y += abs(hd)/(10)
+		if player.mod == 'spring':
+			hm = (545-450)/(10-2)
+		elif player.mod == 'helihat':
+			hm = (545-450)/(10-4)
+		elif player.mod == 'rocket':
+			hm = (545-450)/(10-6)
+		else:
+			hm = abs(hd)/(10)
+		self.rect.y += hm
 		if self.rect.y >= 800:
 			self.kill()
 
